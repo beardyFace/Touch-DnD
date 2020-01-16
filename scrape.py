@@ -12,7 +12,7 @@ class AppURLopener(urllib.request.FancyURLopener):
 opener = AppURLopener()
 
 #Use to get list of monster names
-loc = home + "/Scrape/" + "Monster Spreadsheet (D&D5e).xlsx"
+loc = home + "/Touch-DnD/" + "Monster Spreadsheet (D&D5e).xlsx"
   
 # To open Workbook 
 wb = xlrd.open_workbook(loc) 
@@ -21,7 +21,8 @@ sheet = wb.sheet_by_index(0)
 # For row 0 and column 0 
 mon_col = 0
 sor_col = 20
-for m in range(1, 20):
+start = 2
+for m in range(start, start+1):
 	monster = sheet.cell_value(m, mon_col)
 	source  = sheet.cell_value(m, sor_col)
 
@@ -50,9 +51,14 @@ for m in range(1, 20):
 		#From here strip out character details and save to file
 		for tag in soup.find_all('div'):
 			content = tag.get("class")
+			
 			if content is not None: 
 				if content[0] == "mon-stat-block__description-block-content":
 					print("**************")
 					print(tag.text)	
+				elif content[0] == "ability-block__data":
+					print(tag.text)
+				elif content[0] == "mon-stat-block__tidbits":
+					print(tag.text)
 	else:
 		print("Don't own")
