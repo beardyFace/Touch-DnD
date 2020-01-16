@@ -3,6 +3,10 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import os
+import requests
+
+from os.path import expanduser
+home = expanduser("~")
 
 #launch url
 url = "https://www.dndbeyond.com/monsters/orc"
@@ -32,5 +36,5 @@ for tag in soup.find_all('div'):
 			for img in tag.find_all('img'):
 				print(img['src'])
 			# print(tag)
-			# img = Image.open(requests.get(image_url, stream = True).raw)
-			# img.save('image.jpg')
+				img = Image.open(requests.get(img['src'], stream = True).raw)
+				img.save(home+"/Touch-DnD/image.jpg")
