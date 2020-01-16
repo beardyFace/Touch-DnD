@@ -23,13 +23,6 @@ for tag in soup.find_all('div'):
 	content = tag.get("class")
 	
 	if content is not None: 
-		# if content[0] == "mon-stat-block__description-block-content":
-		# 	print("**************")
-		# 	print(tag.text)	
-		# elif content[0] == "ability-block__data":
-		# 	print(tag.text)
-		# elif content[0] == "mon-stat-block__tidbits":
-		# 	print(tag.text)
 		if content[0] == "image":
 			# print(content[0])
 			print("******************")

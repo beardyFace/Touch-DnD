@@ -1,15 +1,25 @@
-import urllib.request
+from PIL import Image
+import requests
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+# from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
+# from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+
 from bs4 import BeautifulSoup
 import xlrd
 from os.path import expanduser
 home = expanduser("~")
 
+profile = webdriver.FirefoxProfile("/home/henry/.mozilla/firefox/ubjfmgc2.scraper")
+driver = webdriver.Firefox(profile)
 
-# https://stackoverflow.com/questions/16627227/http-error-403-in-python-3-web-scraping
-class AppURLopener(urllib.request.FancyURLopener):
-    version = "Mozilla/5.0"
-
-opener = AppURLopener()
+# driver = webdriver.Firefox()
+driver.implicitly_wait(30)
+url = "https://www.dndbeyond.com"
+driver.get(url)
+test = input("Press enter to continue")
+print(test)
 
 #Use to get list of monster names
 loc = home + "/Touch-DnD/" + "Monster Spreadsheet (D&D5e).xlsx"
@@ -21,8 +31,8 @@ sheet = wb.sheet_by_index(0)
 # For row 0 and column 0 
 mon_col = 0
 sor_col = 20
-start = 2
-for m in range(start, start+1):
+start = 0
+for m in range(start, 5):
 	monster = sheet.cell_value(m, mon_col)
 	source  = sheet.cell_value(m, sor_col)
 
@@ -44,11 +54,17 @@ for m in range(start, start+1):
 		url = "https://www.dndbeyond.com/monsters/"+monster
 		print(url)
 		#TODO Wrap in try/catch to catch bad urls (bad URL format) and save so I can manually edit and run it
-		contents = opener.open(url)
+		# contents = opener.open(url)
+		#launch url
+		
+		# create a new Firefox session
+		driver.get(url)
 
-		soup = BeautifulSoup(contents.read(), 'html.parser')
+		soup = BeautifulSoup(driver.page_source, 'html.parser')
 
 		#From here strip out character details and save to file
+		print("**************")
+		print("**************")
 		for tag in soup.find_all('div'):
 			content = tag.get("class")
 			
@@ -57,8 +73,18 @@ for m in range(start, start+1):
 					print("**************")
 					print(tag.text)	
 				elif content[0] == "ability-block__data":
+					print("**************")
 					print(tag.text)
 				elif content[0] == "mon-stat-block__tidbits":
+					print("**************")
+					print(tag.text)
+				elif content[0] == "image":
+					print("**************")
+					for img in tag.find_all('img'):
+						print(img['src'])
+						img = Image.open(requests.get(img['src'], stream = True).raw)
+						img.save(home+"/Touch-DnD/images/"+monster+".jpg")
+				elif content[0] == "mon-stat-block__meta":
 					print(tag.text)
 	else:
 		print("Don't own")
