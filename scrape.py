@@ -11,16 +11,15 @@ home = "E:\\Projects"
 home += "\\Touch-DnD\\"
 
 def handleDescription(tag):
-    txt = "Description\n"
+    txt = "Description"
     descriptions = tag.findAll("div", {"class", "mon-stat-block__description-block"})
     for description in descriptions:
         labels  = description.findAll("div", {"class", "mon-stat-block__description-block-heading"})
         if len(labels) > 0:
-            txt += formatTxt(labels[0].text.encode("utf-8")) + "\n"
+            txt += labels[0].text
         content = description.findAll("div", {"class", "mon-stat-block__description-block-content"})[0]
-        txt += formatTxt(content.text.encode("utf-8")) + "\n"
-    # print(txt.encode("utf-8"))
-    return txt
+        txt += content.text
+    return txt + "\n"
 
 def handleStatBlock(tag):
     # Base Stats 
@@ -30,9 +29,8 @@ def handleStatBlock(tag):
     for stat in stat_block:
         heading = stat.findAll("div", {"class", "ability-block__heading"})[0]
         data    = stat.findAll("div", {"class", "ability-block__data"})[0]
-        txt += formatTxt(heading.text.encode("utf-8")) + formatTxt(data.text.encode("utf-8")) + "\n"
-    # print(txt.encode("utf-8"))
-    return txt
+        txt += formatTxt(heading.text.encode("utf-8")) + " " + formatTxt(data.text.encode("utf-8")) + " "
+    return txt + "\n\n"
 
 def handleTidBits(tag):
     txt = "Traits\n"
@@ -40,14 +38,14 @@ def handleTidBits(tag):
     for tidbit in tidbits:
         txt  += formatTxt(tidbit.text.encode("utf-8")) + "\n"
     # print(txt.encode("utf-8"))
-    return txt
+    return txt + "\n"
 
 def handleHeaders(tag):
     txt  = "Headers\n"
     meta = tag.findAll("div", {"class", "mon-stat-block__meta"})[0]
-    txt += formatTxt(meta.text.encode("utf-8"))
+    txt += formatTxt(meta.text.encode("utf-8")) + "\n"
     # print(txt.encode("utf-8"))
-    return txt
+    return txt + "\n"
 
 def handleAttributes(tag):
     txt = "Attributes\n"
@@ -55,12 +53,11 @@ def handleAttributes(tag):
     for attribute in attributes:
         txt  += formatTxt(attribute.text.encode("utf-8")) + "\n"
     # print(txt.encode("utf-8"))
-    return txt
+    return txt + "\n"
 
 def handleInfo(tag):
     txt = "Info\n"
-    txt = tag.text.encode("utf-8")
-    txt = formatTxt(txt)
+    txt += tag.text.strip('\n')
     return txt
 
 def formatTxtChar(txt, strip_char):
@@ -101,9 +98,12 @@ mon_col = 0
 sor_col = 20
 start = 1
 index = start
+
+fail_path  = home + "monsters\\fails.txt"
+fails_file = open(fail_path,'w', encoding="utf-8")
 while sheet.cell_value(index, mon_col) is not "":
-# while index < 2:
     monster = sheet.cell_value(index, mon_col)
+    sheet_name = monster
     source  = sheet.cell_value(index, sor_col)
     index += 1
 
@@ -120,9 +120,10 @@ while sheet.cell_value(index, mon_col) is not "":
             monster = space_sep_monster[0]
             for i in range(1, len(space_sep_monster)):
                 monster += "-"+space_sep_monster[i]
+        monster = monster.replace('/', '-')
 
         file_path = home + "monsters\\" + monster + ".txt"
-        stat_file = open(file_path,'w')
+        stat_file = open(file_path,'w', encoding="utf-8")
         stat_file.write(monster+"\n\n")
 
         url = "https://www.dndbeyond.com/monsters/"+monster
@@ -137,10 +138,10 @@ while sheet.cell_value(index, mon_col) is not "":
         soup = BeautifulSoup(driver.page_source, 'html.parser')
 
         #From here strip out character details and save to file
+        txt = ""
         for tag in soup.find_all('div'):
             content = tag.get("class")
             
-            txt = ""
             if content is not None: 
                 if content[0] == "mon-stat-block":
                     for block_tag in tag.find_all('div', recursive=False):
@@ -154,38 +155,34 @@ while sheet.cell_value(index, mon_col) is not "":
                         # ['mon-stat-block__tidbits']
                         # ['mon-stat-block__separator']
                         # ['mon-stat-block__description-blocks']
-                        txt = ""
+                        # txt = ""
                         if block_content[0] == "mon-stat-block__description-blocks":
                             print("description")
-                            txt = handleDescription(block_tag)
+                            txt += handleDescription(block_tag)
 
                         elif block_content[0] == "mon-stat-block__stat-block":
                             print("stat-block")
-                            txt = handleStatBlock(block_tag)
+                            txt += handleStatBlock(block_tag)
 
                         # Resistences and such
                         elif block_content[0] == "mon-stat-block__tidbits":
                             print("tidbits")
-                            txt = handleTidBits(block_tag)
+                            txt += handleTidBits(block_tag)
 
                         # Size, alignment
                         elif block_content[0] == "mon-stat-block__header":
                             print("headers")
-                            txt = handleHeaders(block_tag)
+                            txt += handleHeaders(block_tag)
                         # AC/HP/Speed
                         elif block_content[0] == "mon-stat-block__attributes":
                             print("attributes")
-                            txt = handleAttributes(block_tag)
-
-                        if txt is not "":
-                            stat_file.write(txt+"\n\n")
+                            txt += handleAttributes(block_tag)
 
                 # Content
                 elif content[0] == "more-info-content":
                     print("info")
-                    txt = handleInfo(tag)
-                    if txt is not "":
-                        stat_file.write(txt+"\n\n")
+                    txt += handleInfo(tag) + "\n"
+            
                 elif content[0] == "image":
                     print("image")
                     for img in tag.find_all('img'):
@@ -194,10 +191,28 @@ while sheet.cell_value(index, mon_col) is not "":
                         if not image_url.startswith("https:"):
                             image_url = "https:" + image_url
                         print(image_url)
-                        img = Image.open(requests.get(image_url, stream = True).raw)
-                        img.save(home+"images\\"+monster+".jpg")
 
+                        try:
+                            img = Image.open(requests.get(image_url, stream = True).raw)
+                        except Exception as e:
+                            print("Failed to load image")
+
+                        def fixExt(ext):
+                            if ext == "jpeg":
+                                ext = ".jpg"
+                            return ext
+
+                        image_file = home+"images\\"+monster+fixExt(image_url[-4:])
+                        # print(image_file)
+                        img.save(image_file)
+
+        if txt == "":
+            fails_file.write(sheet_name+" -- "+monster+"\n")
+            print("Failed to load: "+sheet_name+"\n"+monster)
+        stat_file.write(txt)
         stat_file.close()
     else:
         print("Don't own")
+
+fails_file.close()
 
